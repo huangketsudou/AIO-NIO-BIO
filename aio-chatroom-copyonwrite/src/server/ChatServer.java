@@ -49,7 +49,7 @@ public class ChatServer {
         try {
             closeable.close();
         } catch (IOException e) {
-            e.printStackTrace();
+            //e.printStackTrace();
         }
     }
 
@@ -74,7 +74,7 @@ public class ChatServer {
             InetSocketAddress address = (InetSocketAddress) clientChannel.getRemoteAddress();
             clientPort = address.getPort();
         } catch (IOException e) {
-            e.printStackTrace();
+//            e.printStackTrace();//这里吗
         }
         return "客户端[" + clientPort + "]";
     }
@@ -87,15 +87,17 @@ public class ChatServer {
                     handler.clientChannel.write(buffer,null,handler);
                     //这里估计有发信异常，当一个线程有用户退出时，而在另一线程，其他服务器对着该用户发信息就会找不到对象,
                     //添加一个sleep来测试以下
-                    Thread.sleep(1000);
+                    //Thread.sleep(1000);
                     //sleep测试不到，因为所有的线程都是等到发完quit信息之后才退出的，应该像个办法在外部阻塞它，被阻塞的应该是handler线程
-                    //可以用一个try catch抓住异常，不处理就可以了,就是下面这里这个异常
-                    //如果是在控制台强行关闭的话，保存用户的数组里面有一个不正常关闭的连接
+                    //可以用一个try catch抓住异常，将此时的channel关闭
+                    //如果是在控制台强行关闭的话，保存用户的数组里面有一个不正常关闭的连接,在转发消息的时候会在write这里报错，并将转而调用相应handler的fail函数
                 } catch (Exception e) {
-                    e.printStackTrace();
+//                    e.printStackTrace();
+                    removeClient(handler);
                 }
             }
         }
+        System.out.println(connectedClients.size());
     }
 
     public void start() {
@@ -178,6 +180,7 @@ public class ChatServer {
         @Override
         public void failed(Throwable exc, Object attachment) {
             System.out.println("读写失败:" + exc);
+            removeClient(this);//将断开连接的handler移出列表
         }
     }
 
